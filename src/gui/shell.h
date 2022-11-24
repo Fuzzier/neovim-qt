@@ -248,7 +248,7 @@ private:
     // The IME state of the previous "insert" mode.
     int m_imeOpenState;
     // The previous mode.
-    QString m_oldMode;
+    QList<QString> m_oldModes;
 #endif // Q_OS_WIN
 };
 

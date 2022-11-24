@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <QApplication>
+#include <QMainWindow>
 #include <QClipboard>
 #include <QDebug>
 #include <QFontDialog>
@@ -110,7 +111,16 @@ Shell::Shell(NeovimConnector *nvim, QWidget *parent)
 
 #ifdef Q_OS_WIN
     m_imeOpenState = 0;
-    m_oldMode = "normal";
+    m_oldModes.push_front("normal");
+    // Set IME state.
+    HWND hWnd = (HWND)winId();
+    HIMC hImc = ImmGetContext(hWnd);
+    if (hImc)
+    {
+        // Set IME open state to `0` for the initial "normal" mode.
+        ImmSetOpenStatus(hImc, 0);
+        ImmReleaseContext(hWnd, hImc);
+    }
 #endif // Q_OS_WIN
 }
 
@@ -740,27 +750,61 @@ void Shell::handleModeChange(const QVariantList& opargs)
 #ifdef Q_OS_WIN
     // Set IME state.
     HWND hWnd = (HWND)winId();
-    if (m_oldMode == "insert" && mode != "insert")
+    // From "insert" or "cmdline_normal" to "normal" mode.
+    if ((m_oldModes.front() == "insert" ||
+         m_oldModes.front() == "cmdline_normal")
+        && mode == "normal")
     {
         HIMC hImc = ImmGetContext(hWnd);
         if (hImc)
         {
-            // Record the IME open state before leaving "insert" mode.
-            m_imeOpenState = ImmSetOpenStatus(hImc, 0);
+            if (ImmGetOpenStatus(hImc) != 0)
+            {
+                // Set IME open state to `0`.
+                // Record IME open state used in "insert" mode.
+                m_imeOpenState = ImmSetOpenStatus(hImc, 0);
+            }
             ImmReleaseContext(hWnd, hImc);
         }
     }
-    else if (m_oldMode != "insert" && mode == "insert")
+    // From "normal" mode to "insert" mode.
+    // Do not restore IME open state, since it would force the users to
+    // remember the previous state, or take a look at the current state,
+    // in order to avoid miss typing, which is rather inconvenient.
+    // else if ((m_oldModes.front() == "normal" ||
+    //           m_oldModes.front() == "operator")
+    //          && (mode == "insert"))
+    // {
+    //     // Restore IME open state, if the mode was changed from then back
+    //     // to "insert" mode in a short time.
+    //     HIMC hImc = ImmGetContext(hWnd);
+    //     if (hImc)
+    //     {
+    //         if (ImmGetOpenStatus(hImc) != m_imeOpenState)
+    //         {
+    //             // Restore IME open state used in the previous "insert" mode.
+    //             ImmSetOpenStatus(hImc, m_imeOpenState);
+    //         }
+    //         ImmReleaseContext(hWnd, hImc);
+    //     }
+    // }
+    QMainWindow* mainWin = dynamic_cast<QMainWindow*>(m_nvim->parent());
+    if (mainWin)
     {
-        HIMC hImc = ImmGetContext(hWnd);
-        if (hImc)
+        QString title = "Neovim: ";
+        title += mode;
+        for (QString& oldMode : m_oldModes)
         {
-            // Restore the IME open state in the previous "insert" mode.
-            ImmSetOpenStatus(hImc, m_imeOpenState);
-            ImmReleaseContext(hWnd, hImc);
+            title += " <- ";
+            title += oldMode;
         }
+        mainWin->setWindowTitle(title.toStdString().data());
     }
-    m_oldMode = mode;
+    if (m_oldModes.size() > 4)
+    {
+        m_oldModes.pop_back();
+    }
+    m_oldModes.push_front(mode);
 #endif // Q_OS_WIN
 
 	if (!m_cursor.IsStyleEnabled()) {
