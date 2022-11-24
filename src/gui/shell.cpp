@@ -22,6 +22,12 @@
 #include "util.h"
 #include "version.h"
 
+#ifdef Q_OS_WIN
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#pragma comment(lib, "imm32.lib")
+#endif // Q_OS_WIN
+
 namespace NeovimQt {
 
 static ShellOptions GetShellOptionsFromQSettings() noexcept
@@ -101,6 +107,11 @@ Shell::Shell(NeovimConnector *nvim, QWidget *parent)
 	connect(this, &ShellWidget::fontError, this, &Shell::handleFontError);
 
 	m_nvim->setRequestHandler(new ShellRequestHandler(this));
+
+#ifdef Q_OS_WIN
+    m_imeOpenState = 0;
+    m_oldMode = "normal";
+#endif // Q_OS_WIN
 }
 
 void Shell::ensureVisible() noexcept
@@ -725,6 +736,32 @@ void Shell::handleModeChange(const QVariantList& opargs)
 
 	const QString mode{ m_nvim->decode(opargs.at(0).toByteArray()) };
 	const uint64_t modeIndex{ opargs.at(1).toULongLong() };
+
+#ifdef Q_OS_WIN
+    // Set IME state.
+    HWND hWnd = (HWND)winId();
+    if (m_oldMode == "insert" && mode != "insert")
+    {
+        HIMC hImc = ImmGetContext(hWnd);
+        if (hImc)
+        {
+            // Record the IME open state before leaving "insert" mode.
+            m_imeOpenState = ImmSetOpenStatus(hImc, 0);
+            ImmReleaseContext(hWnd, hImc);
+        }
+    }
+    else if (m_oldMode != "insert" && mode == "insert")
+    {
+        HIMC hImc = ImmGetContext(hWnd);
+        if (hImc)
+        {
+            // Restore the IME open state in the previous "insert" mode.
+            ImmSetOpenStatus(hImc, m_imeOpenState);
+            ImmReleaseContext(hWnd, hImc);
+        }
+    }
+    m_oldMode = mode;
+#endif // Q_OS_WIN
 
 	if (!m_cursor.IsStyleEnabled()) {
 		if (mode == "insert") {

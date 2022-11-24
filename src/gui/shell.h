@@ -243,6 +243,13 @@ private:
 	bool m_mouseEnabled{ true };
 
 	QWindow *m_window_handle{ nullptr };
+
+#ifdef Q_OS_WIN
+    // The IME state of the previous "insert" mode.
+    int m_imeOpenState;
+    // The previous mode.
+    QString m_oldMode;
+#endif // Q_OS_WIN
 };
 
 class ShellRequestHandler: public QObject, public MsgpackRequestHandler
