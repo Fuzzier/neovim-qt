@@ -788,18 +788,18 @@ void Shell::handleModeChange(const QVariantList& opargs)
     //         ImmReleaseContext(hWnd, hImc);
     //     }
     // }
-    QMainWindow* mainWin = dynamic_cast<QMainWindow*>(m_nvim->parent());
-    if (mainWin)
-    {
-        QString title = "Neovim: ";
-        title += mode;
-        for (QString& oldMode : m_oldModes)
-        {
-            title += " <- ";
-            title += oldMode;
-        }
-        mainWin->setWindowTitle(title.toStdString().data());
-    }
+    // QMainWindow* mainWin = dynamic_cast<QMainWindow*>(m_nvim->parent());
+    // if (mainWin)
+    // {
+    //     QString title = "Neovim: ";
+    //     title += mode;
+    //     for (QString& oldMode : m_oldModes)
+    //     {
+    //         title += " <- ";
+    //         title += oldMode;
+    //     }
+    //     mainWin->setWindowTitle(title.toStdString().data());
+    // }
     if (m_oldModes.size() > 4)
     {
         m_oldModes.pop_back();
