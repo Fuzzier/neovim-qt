@@ -771,23 +771,23 @@ void Shell::handleModeChange(const QVariantList& opargs)
     // Do not restore IME open state, since it would force the users to
     // remember the previous state, or take a look at the current state,
     // in order to avoid miss typing, which is rather inconvenient.
-    // else if ((m_oldModes.front() == "normal" ||
-    //           m_oldModes.front() == "operator")
-    //          && (mode == "insert"))
-    // {
-    //     // Restore IME open state, if the mode was changed from then back
-    //     // to "insert" mode in a short time.
-    //     HIMC hImc = ImmGetContext(hWnd);
-    //     if (hImc)
-    //     {
-    //         if (ImmGetOpenStatus(hImc) != m_imeOpenState)
-    //         {
-    //             // Restore IME open state used in the previous "insert" mode.
-    //             ImmSetOpenStatus(hImc, m_imeOpenState);
-    //         }
-    //         ImmReleaseContext(hWnd, hImc);
-    //     }
-    // }
+    else if ((m_oldModes.front() == "normal" ||
+              m_oldModes.front() == "operator")
+             && (mode == "insert"))
+    {
+        // Restore IME open state, if the mode was changed from then back
+        // to "insert" mode in a short time.
+        HIMC hImc = ImmGetContext(hWnd);
+        if (hImc)
+        {
+            if (ImmGetOpenStatus(hImc) != m_imeOpenState)
+            {
+                // Restore IME open state used in the previous "insert" mode.
+                ImmSetOpenStatus(hImc, m_imeOpenState);
+            }
+            ImmReleaseContext(hWnd, hImc);
+        }
+    }
     // QMainWindow* mainWin = dynamic_cast<QMainWindow*>(m_nvim->parent());
     // if (mainWin)
     // {
