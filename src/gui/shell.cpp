@@ -772,6 +772,7 @@ void Shell::handleModeChange(const QVariantList& opargs)
     // remember the previous state, or take a look at the current state,
     // in order to avoid miss typing, which is rather inconvenient.
     else if ((m_oldModes.front() == "normal" ||
+              m_oldModes.front() == "visual" ||
               m_oldModes.front() == "operator")
              && (mode == "insert"))
     {
